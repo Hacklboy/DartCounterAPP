@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DartCount">
+<title>🎯 DartCount</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0D1117;--card:#1A2332;--card2:#222E42;
+  --accent:#00E676;--gold:#C9A84C;--red:#E53935;--blue:#1E88E5;
+  --text:#E8EDF5;--muted:#6B7A99;--border:#2A3A55;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overscroll-behavior:none;}
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative;}
+
+/* NAV BAR */
+.nav{display:flex;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-logo{font-size:16px;font-weight:700;color:var(--accent);padding:13px 12px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0;letter-spacing:1px;}
+.nav-tab{padding:13px 13px;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;transition:color .2s;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* SCREENS */
+.screen{display:none;flex:1;overflow-y:auto;padding:14px;padding-bottom:calc(14px + var(--safe-bottom));}
+.screen.active{display:block;}
+
+/* BUTTONS */
+.btn{padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:none;font-weight:500;transition:all .15s;touch-action:manipulation;}
+.btn:active{transform:scale(0.96);}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-secondary{background:var(--card2);border:1px solid var(--border);color:var(--text);}
+.btn-sm{padding:7px 12px;font-size:12px;}
+
+/* INPUTS */
+.input-field{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-size:14px;outline:none;width:100%;transition:border .2s;}
+.input-field:focus{border-color:var(--accent);}
+select.input-field{cursor:pointer;}
+
+/* LABELS */
+.section-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:16px 0 8px;}
+.section-label:first-child{margin-top:0;}
+
+/* SETUP */
+.page-title{font-size:20px;font-weight:600;margin-bottom:3px;}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.game-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:4px;}
+.game-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;touch-action:manipulation;}
+.game-card.selected{border-color:var(--accent);background:#0a2a1a;}
+.game-card-icon{font-size:22px;margin-bottom:4px;}
+.game-card-name覆{font-size:13px;font-weight:600;}
+.game-card-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.players-row{display:flex;flex-wrap:wrap;gap:6px;}
+.player-chip{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 10px;font-size:12px;cursor:pointer;}
+.player-chip .rm{color:var(--red);font-size:10px;font-weight:700;}
+.add-player{display:flex;gap:8px;margin-top:8px;}
+.options-row{display:flex;gap:8px;flex-wrap:wrap;}
+.opt-group{flex:1;min-width:80px;}
+.opt-group label{font-size:10px;color:var(--muted);display:block;margin-bottom:4px;}
+.start-bar{margin-top:16px;display:flex;gap:8px;align-items:center;}
+.start-err{font-size:11px;color:var(--red);}
+
+/* GAME SCREEN */
+.game-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.mode-badge{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--gold);font-weight:500;}
+.turn-label{font-size:13px;color:var(--muted);}
+.turn-name{color:var(--accent);font-weight:600;}
+.gh-actions{display:flex;gap:5px;margin-left:auto;}
+
+/* SCOREBOARD */
+.sb-grid{display:flex;flex-direction:column;gap:7px;margin-bottom:10px;}
+.player-row{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;transition:all .3s;}
+.player-row.active{border-color:var(--accent);background:#0a2a1a;}
+.player-row.winner{border-color:var(--gold);background:#1a1500;}
+.p-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+.p-info{flex:1;min-width:0;}
+.p-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.p-avg{font-size:10px;color:var(--muted);margin-top:1px;}
+.p-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.p-score{font-size:26px;font-weight:700;min-width:55px;text-align:right;flex-shrink:0;}
+.p-score.low{color:var(--gold);}
+.p-score.hot{color:var(--red);}
+.cricket-marks{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;}
+.cm{font-size:10px;color:var(--muted);background:var(--card2);border-radius:4px;padding:2px 4px;min-width:18px;text-align:center;}
+.cm.open{color:var(--accent);}
+.cm.closed{color:var(--muted);text-decoration:line-through;}
+
+/* NUMPAD */
+.numpad-section{background:var(--card);border-radius:12px;padding:10px;margin-bottom:10px;}
+.throw-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px;}
+.throw-slot{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center;}
+.throw-slot .lbl{font-size:9px;color:var(--muted);}
+.throw-slot .val{font-size:17px;font-weight:700;color:var(--accent);}
+.throw-slot:last-child .val{color:var(--gold);}\n.mult-row{display:flex;gap:5px;margin-bottom:7px;}
+.mult-btn{flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--card2);color:var(--muted);cursor:pointer;font-size:12px;text-align:center;transition:all .2s;touch-action:manipulation;}
+.mult-btn:active{transform:scale(0.95);}
+.mult-btn[data-m="1"].active{background:var(--accent);border-color:var(--accent);color:#000;}
+.mult-btn[data-m="2"].active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.mult-btn[data-m="3"].active{background:var(--gold);border-color:var(--gold);color:#000;}
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:7px;}
+.np-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:11px 4px;font-size:13px;cursor:pointer;text-align:center;font-weight:500;transition:all .15s;touch-action:manipulation;}
+.np-btn:active{background:#2a3a55;transform:scale(0.93);}
+.np-btn.bull{color:var(--red);}
+.np-btn.miss{color:var(--muted);}
+.np-btn.tgt{background:#1a1500;border-color:var(--gold);color:var(--gold);font-weight:700;}
+.np-btn.done{background:#0a2a1a;border-color:var(--accent);color:var(--accent);}
+.action-row{display:flex;gap:6px;}
+.action-row .btn{flex:1;}
+
+/* HISTORY */
+.history-section{background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+.history-list{max-height:150px;overflow-y:auto;}
+.hi-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);}
+.hi-item:last-child{border-bottom:none;}
+.hi-name{color:var(--gold);min-width:50px;font-weight:500;}
+.hi-score{font-weight:600;color:var(--text);min-width:28px;}
+.hi-detail{color:var(--muted);}
+
+/* WINNER */
+.winner-banner{background:#1a1500;border:2px solid var(--gold);border-radius:14px;padding:20px;text-align:center;margin-bottom:10px;}
+.winner-crown{font-size:32px;}
+.winner-title{font-size:20px;font-weight:700;color:var(--gold);margin:6px 0 3px;}
+.winner-sub{font-size:12px;color:var(--muted);}
+
+/* TOAST */
+#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;opacity:0;transition:all .3s;pointer-events:none;z-index:99;white-space:nowrap;color:var(--accent);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* SAVE / LOAD */
+.save-list{display:flex;flex-direction:column;gap:8px;}
+.save-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.save-info{flex:1;}
+.save-name{font-size:13px;font-weight:500;}
+.save-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.save-actions{display:flex;gap:5px;}
+.no-saves{font-size:13px;color:var(--muted);text-align:center;padding:24px 0;}
+
+/* DESIGN */
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.theme-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;transition:all .2s;text-align:center;touch-action:manipulation;}
+.theme-card.active{border-color:var(--accent);}
+.theme-preview{height:40px;border-radius:8px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.theme-name{font-size:12px;font-weight:500;}
+.layout-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:grab;touch-action:none;user-select:none;}
+.layout-block.dragging{opacity:.4;}
+.layout-block.drag-over{border-top:2px solid var(--accent);}
+.drag-handle{color:var(--muted);font-size:18px;}
+.color-row{display:flex;gap:8px;align-items:center;margin-top:8px;}
+.color-picker-input{width:44px;height:38px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;padding:2px;}
+
+/* VOICE TAB */
+.voice-row{background:var(--card);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.voice-trigger-lbl{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.voice-trigger-name{font-size:13px;font-weight:600;margin-bottom:6px;}
+.voice-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.voice-text-input{flex:1;min-width:120px;}
+.voice-btn{padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--text);touch-action:manipulation;}
+.voice-btn.rec{border-color:var(--red);color:var(--red);}
+.voice-btn.rec.recording{background:var(--red);color:#fff;animation:pulse 1s infinite;}
+.voice-btn.play{border-color:var(--accent);color:var(--accent);}
+.toggle{width:38px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:.2s;flex-shrink:0;}
+.toggle.on{background:var(--accent);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle.on::after{left:18px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ATC display */
+.atc-nums{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.atc-n{background:var(--card2);border:1.5px solid var(--border);border-radius:6px;padding:4px 7px;font-size:11px;font-weight:500;}
+.atc-n.done{background:#0a2a1a;border-color:var(--accent);color:var(--accent);}
+.atc-n.current{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
+.stat-card{background:var(--card);border-radius:10px;padding:10px 12px;}
+.stat-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.stat-value{font-size:22px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toast"></div>
+  <div class="nav">
+    <div class="nav-logo">🎯 DART</div>
+    <div class="nav-tab active" onclick="showTab('setup')">Neues Spiel</div>
+    <div class="nav-tab" id="tab-game" style="display:none" onclick="showTab('game')">Spiel</div>
+    <div class="nav-tab" onclick="showTab('saves')">Gespeichert</div>
+    <div class="nav-tab" onclick="showTab('design')">Design</div>
+    <div class="nav-tab" onclick="showTab('voice')">Voicelines</div>
+  </div>
+
+  <div class="screen active" id="screen-setup">
+    <div class="page-title">Neues Spiel</div>
+    <div class="page-sub">Modus und Spieler wählen</div>
+    <div class="section-label">Spielmodus</div>
+    <div class="game-grid" id="game-grid"></div>
+    <div id="game-options"></div>
+    <div class="section-label">Spieler</div>
+    <div class="players-row" id="players-row"></div>
+    <div class="add-player" style="margin-top:8px;">
+      <input class="input-field" id="player-input" placeholder="Name..." maxlength="14" style="flex:1;">
+      <button class="btn btn-secondary btn-sm" onclick="addPlayer()">+ Hinzufügen</button>
+    </div>
+    <div class="start-bar">
+      <button class="btn btn-primary" onclick="startGame()">▶ Starten</button>
+      <span class="start-err" id="start-err"></span>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-game">
+    <div class="game-header">
+      <div class="mode-badge" id="g-mode-badge">X01</div>
+      <div class="turn-label">Dran: <span class="turn-name" id="g-turn-name">–</span></div>
+      <div class="gh-actions">
+        <button class="btn btn-secondary btn-sm" onclick="undoThrow()">↩</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveCurrentGame()">💾</button>
+        <button class="btn btn-secondary btn-sm" onclick="endGame()">✕</button>
+      </div>
+    </div>
+    <div id="winner-area"></div>
+    <div id="scoreboard"></div>
+    <div id="numpad-wrap">
+      <div class="numpad-section" id="numpad-section">
+        <div class="throw-row" id="throw-display">
+          <div class="throw-slot"><div class="lbl">Dart 1</div><div class="val" id="t1">–</div></div>
+          <div class="throw-slot"><div class="lbl">Dart 2</div><div class="val" id="t2">–</div></div>
+          <div class="throw-slot"><div class="lbl">Dart 3</div><div class="val" id="t3">–</div></div>
+          <div class="throw-slot"><div class="lbl">Runde</div><div class="val" id="t-tot" style="color:var(--gold)">0</div></div>
+        </div>
+        <div class="mult-row" id="mult-row">
+          <div class="mult-btn active" data-m="1" onclick="setMult(1)">Single</div>
+          <div class="mult-btn" data-m="2" onclick="setMult(2)">Double</div>
+          <div class="mult-btn" data-m="3" onclick="setMult(3)">Triple</div>
+        </div>
+        <div class="numpad" id="numpad"></div>
+        <div class="action-row">
+          <button class="btn btn-secondary btn-sm" onclick="clearThrow()">Löschen</button>
+          <button class="btn btn-primary" onclick="commitThrow()">Bestätigen ✓</button>
+        </div>
+      </div>
+    </div>
+    <div class="history-section" id="history-section">
+      <div class="section-label" style="margin-top:0">Verlauf</div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-saves">
+    <div class="page-title">Gespeicherte Spiele</div>
+    <div class="page-sub">Lade ein gespeichertes Spiel oder exportiere es</div>
+    <div id="saves-list"></div>
+  </div>
+
+  <div class="screen" id="screen-design">
+    <div class="page-title">Design</div>
+    <div class="page-sub">Thema wählen, Farben anpassen, Layout sortieren</div>
+    <div class="section-label">Thema</div>
+    <div class="theme-grid" id="theme-grid"></div>
+    <div class="section-label">Akzentfarbe</div>
+    <div class="color-row">
+      <input type="color" class="color-picker-input" id="color-picker" value="#00E676">
+      <button class="btn btn-secondary btn-sm" onclick="applyColor()">Übernehmen</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetColors()">Zurücksetzen</button>
+    </div>
+    <div class="section-label">Layout-Reihenfolge (Drag & Drop)</div>
+    <div id="layout-blocks" style="display:flex;flex-direction:column;gap:7px;"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;">☰ Blöcke verschieben, um die Reihenfolge im Spiel zu ändern</div>
+  </div>
+
+  <div class="screen" id="screen-voice">
+    <div class="page-title">Voicelines</div>
+    <div class="page-sub">Texte sprechen oder eigene Stimme aufnehmen</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:13px;">Voicelines aktiv</span>
+      <div class="toggle on" id="voice-toggle" onclick="toggleVoice()"></div>
+      <select class="input-field" id="voice-lang" style="flex:1;" onchange="state.voiceLang=this.value">
+        <option value="de-DE">Deutsch</option>
+        <option value="en-GB">English (UK)</option>
+        <option value="en-US">English (US)</option>
+      </select>
+    </div>
+    <div id="voice-rows"></div>
+    <div class="section-label">Eigene Voiceline</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <input class="input-field" id="vl-trigger" placeholder="Auslöser (z.B. 180, bust, winner…)">
+      <input class="input-field" id="vl-text" placeholder="Text der gesprochen wird">
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="addVoiceLine()">Text hinzufügen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const GAMES=[
+  {id:'501',name:'501',icon:'🎯',desc:'Runter auf 0'},
+  {id:'301',name:'301',icon:'🎯',desc:'Kürzeres Spiel'},
+  {id:'cricket',name:'Cricket',icon:'🏏',desc:'15–20 + Bull schließen'},
+  {id:'atc',name:'Around the Clock',icon:'🕐',desc:'1 bis 20 + Bull'},
+  {id:'killer',name:'Killer',icon:'💀',desc:'3 Leben, Doppel treffen'},
+  {id:'halfit',name:'Half-It',icon:'✂️',desc:'Verpassen = halbiert'},
+  {id:'tactics',name:'Tactics',icon:'♟️',desc:'Cricket Variante'},
+];
+const THEMES=[
+  {id:'default',name:'Pub Night',bg:'#0D1117',card:'#1A2332',accent:'#00E676',gold:'#C9A84C'},
+  {id:'neon',name:'Neon Club',bg:'#09001A',card:'#180030',accent:'#FF00FF',gold:'#FF8C00'},
+  {id:'classic',name:'Klassisch',bg:'#1C1208',card:'#2A1E0F',accent:'#FFB300',gold:'#FF6F00'},
+  {id:'ice',name:'Ice Blue',bg:'#071826',card:'#0D2B3E',accent:'#00E5FF',gold:'#40C4FF'},
+  {id:'forest',name:'Forest',bg:'#0A1A0D',card:'#132418',accent:'#76FF03',gold:'#CCFF90'},
+];
+const CRICKET_NUMS=[15,16,17,18,19,20,'B'];
+const HALFIT_ROUNDS=[15,16,17,18,19,20,'B','DB','3B'];
+const AVATAR_BGS=['#2a0a0a','#0a0a2a','#0a2a0a','#2a2a0a','#1a0a2a','#2a1a0a'];
+const AVATAR_EMOJIS=['🔴','🔵','🟢','🟡','🟣','🟠'];
+
+let voiceLines=[
+  {key:'180',trigger:'180',text:'Einhundertachtzig!',audioData:null},
+  {key:'171',trigger:'171',text:'Hundert Einundsiebzig!',audioData:null},
+  {key:'100plus',trigger:'100+',text:'Über hundert Punkte!',audioData:null},
+  {key:'bust',trigger:'bust',text:'Bust! Schade.',audioData:null},
+  {key:'winner',trigger:'winner',text:'Gewonnen! Ausgezeichnet!',audioData:null},
+  {key:'checkout',trigger:'checkout',text:'Checkout möglich!',audioData:null},
+  {key:'double',trigger:'double',text:'Doppel!',audioData:null},
+  {key:'triple',trigger:'triple',text:'Triple!',audioData:null},
+  {key:'bull',trigger:'bull',text:'Bull!',audioData:null},
+  {key:'nextPlayer',trigger:'nextPlayer',text:'Nächster Spieler!',audioData:null},
+];
+
+let state={
+  selectedGame:'501',
+  players:['Anna','Ben'],
+  currentPlayerIdx:0,
+  scores:{},legs:{},wins:{},
+  cricketMarks:{},atcTargets:{},killerLives:{},halfit:{},halfitRound:0,
+  gameOptions:{legs:1,startIn:'straight',endOn:'double'},
+  currentThrows:[],
+  mult:1,
+  history:[],
+  undo:[],
+  voiceEnabled:true,
+  voiceLang:'de-DE',
+  winner:null,
+  theme:'default',
+  layoutOrder:['scoreboard','numpad-wrap','history-section'],
+  stats:{},
+};
+
+// ============================================================
+// STORAGE
+// ============================================================
+function getSaves(){try{return JSON.parse(localStorage.getItem('dartcount_saves')||'[]');}catch{return[];}}
+function setSaves(arr){localStorage.setItem('dartcount_saves',JSON.stringify(arr));}
+function saveCurrentGame(){
+  const name=prompt('Spielname eingeben:','Spiel '+new Date().toLocaleDateString('de-DE'));
+  if(!name)return;
+  const saves=getSaves();
+  saves.unshift({
+    name,
+    date:new Date().toISOString(),
+    game:state.selectedGame,
+    players:state.players,
+    state:JSON.parse(JSON.stringify(state)),
+    voiceLines:JSON.parse(JSON.stringify(voiceLines)),
+  });
+  if(saves.length>20)saves.pop();
+  setSaves(saves);
+  showToast('Gespeichert ✓',null);
+}
+function loadSave(idx){
+  const saves=getSaves();
+  const s=saves[idx];
+  if(!s)return;
+  Object.assign(state,s.state);
+  voiceLines=s.voiceLines||voiceLines;
+  state.undo=[];
+  document.getElementById('tab-game').style.display='';
+  showTab('game');
+  renderGame();
+  showToast('Geladen: '+s.name,null);
+}
+function deleteSave(idx){
+  if(!confirm('Löschen?'))return;
+  const saves=getSaves();
+  saves.splice(idx,1);
+  setSaves(saves);
+  renderSaves();
+}
+function exportSave(idx){
+  const saves=getSaves();
+  const s=saves[idx];
+  const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=s.name.replace(/\s+/g,'_')+'.json';
+  a.click();
+}
+function renderSaves(){
+  const el=document.getElementById('saves-list');
+  const saves=getSaves();
+  if(!saves.length){el.innerHTML='<div class="no-saves">Noch keine gespeicherten Spiele</div>';return;}
+  el.innerHTML='<div class="save-list">'+saves.map((s,i)=>`
+    <div class="save-item">
+      <div class="p-avatar" style="background:${AVATAR_BGS[0]}">${GAMES.find(g=>g.id===s.game)?.icon||'🎯'}</div>
+      <div class="save-info">
+        <div class="save-name">${s.name}</div>
+        <div class="save-meta">${s.game.toUpperCase()} · ${s.players.join(', ')} · ${new Date(s.date).toLocaleDateString('de-DE')}</div>
+      </div>
+      <div class="save-actions">
+        <button class="btn btn-secondary btn-sm" onclick="loadSave(${i})">▶</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportSave(${i})">⬇</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSave(${i})">✕</button>
+      </div>
+    </div>`).join('')+'</div>';
+}
+
+// ============================================================
+// VOICE
+// ============================================================
+let mediaRecorder=null,recordingKey=null,recordingChunks=[];
+function speak(text){
+  if(!state.voiceEnabled||!window.speechSynthesis)return;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=state.voiceLang;u.rate=1.05;
+  speechSynthesis.cancel();speechSynthesis.speak(u);
+}
+function playAudio(data){
+  const audio=new Audio(data);audio.play();
+}
+function triggerVoice(key,extra){
+  const vl=voiceLines.find(v=>v.key===key);
+  if(!vl||!state.voiceEnabled)return;
+  if(vl.audioData){playAudio(vl.audioData);}
+  else{speak(vl.text+(extra?' '+extra:''));}
+}
+async function startRecording(key){
+  if(!navigator.mediaDevices){showToast('Mikrofon nicht verfügbar','var(--red)');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recordingChunks=[];recordingKey=key;
+    mediaRecorder=new MediaRecorder(stream);
+    mediaRecorder.ondataavailable=e=>recordingChunks.push(e.data);
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(recordingChunks,{type:'audio/webm'});
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const vl=voiceLines.find(v=>v.key===recordingKey);
+        if(vl)vl.audioData=reader.result;
+        stream.getTracks().forEach(t=>t.stop());
+        renderVoiceTab();
+        showToast('Aufnahme gespeichert ✓',null);
+      };
+      reader.readAsDataURL(blob);
+    };
+    mediaRecorder.start();
+    const btn=document.querySelector(`.voice-btn.rec[data-key="${key}"]`);
+    if(btn){btn.classList.add('recording');btn.textContent='⏹ Stopp';}
+  }catch(e){showToast('Mikrofon Fehler: '+e.message,'var(--red)');}
+}
+function stopRecording(){
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+  document.querySelectorAll('.voice-btn.rec').forEach(b=>{b.classList.remove('recording');b.textContent='🎤 Aufnehmen';});
+}
+function toggleVoice(){
+  state.voiceEnabled=!state.voiceEnabled;
+  document.getElementById('voice-toggle').classList.toggle('on',state.voiceEnabled);
+  showToast(state.voiceEnabled?'Voicelines AN':'Voicelines AUS',null);
+}
+function addVoiceLine(){
+  const trigger=document.getElementById('vl-trigger').value.trim();
+  const text=document.getElementById('vl-text').value.trim();
+  if(!trigger||!text){showToast('Auslöser und Text eingeben','var(--red)');return;}
+  voiceLines.push({key:'custom_'+Date.now(),trigger,text,audioData:null});
+  document.getElementById('vl-trigger').value='';
+  document.getElementById('vl-text').value='';
+  renderVoiceTab();
+  showToast('Voiceline hinzugefügt ✓',null);
+}
+function renderVoiceTab(){
+  const el=document.getElementById('voice-rows');
+  el.innerHTML=voiceLines.map((vl,i)=>`
+    <div class="voice-row">
+      <div class="voice-trigger-lbl">Auslöser</div>
+      <div class="voice-trigger-name">${vl.trigger} ${vl.audioData?'🎙️':''}</div>
+      <div class="voice-controls">
+        <input class="input-field voice-text-input" value="${vl.text.replace(/"/g,'&quot;')}" 
+               oninput="voiceLines[${i}].text=this.value" placeholder="Text...">
+        <button class="voice-btn rec" data-key="${vl.key}" 
+                onclick="mediaRecorder&&mediaRecorder.state==='recording'?stopRecording():startRecording('${vl.key}')">🎤 Aufnehmen</button>
+        <button class="voice-btn play" onclick="vl_play(${i})">▶ Test</button>
+        ${i>=10?`<button class="voice-btn" style="color:var(--red)" onclick="voiceLines.splice(${i},1);renderVoiceTab()">✕</button>`:''}
+      </div>
+    </div>`).join('');
+}
+function vl_play(i){
+  const vl=voiceLines[i];
+  if(vl.audioData)playAudio(vl.audioData);
+  else speak(vl.text);
+}
+
+// ============================================================
+// SETUP
+// ============================================================
+function initSetup(){
+  const gg=document.getElementById('game-grid');
+  gg.innerHTML=GAMES.map(g=>`
+    <div class="game-card${g.id===state.selectedGame?' selected':''}" onclick="selectGame('${g.id}')">
+      <div class="game-card-icon">${g.icon}</div>
+      <div class="game-card-name">${g.name}</div>
+      <div class="game-card-desc">${g.desc}</div>
+    </div>`).join('');
+  renderGameOptions();
+  renderPlayers();
+}
+function selectGame(id){state.selectedGame=id;initSetup();}
+function renderGameOptions(){
+  const el=document.getElementById('game-options');
+  const g=state.selectedGame;
+  if(['cricket','atc','killer','halfit','tactics'].includes(g)){el.innerHTML='';return;}
+  el.innerHTML=`<div class="section-label">Optionen</div>
+  <div class="options-row">
+    <div class="opt-group"><label>Legs</label>
+      <select class="input-field" onchange="state.gameOptions.legs=+this.value"><option>1</option><option>3</option><option>5</option><option>7</option></select></div>
+    <div class="opt-group"><label>Start</label>
+      <select class="input-field" onchange="state.gameOptions.startIn=this.value">
+        <option value="straight">Straight In</option><option value="double">Double In</option></select></div>
+    <div class="opt-group"><label>Ende</label>
+      <select class="input-field" onchange="state.gameOptions.endOn=this.value">
+        <option value="double">Double Out</option><option value="straight">Straight Out</option><option value="master">Master Out</option></select></div>
+  </div>`;
+}
+function renderPlayers(){
+  const row=document.getElementById('players-row');
+  row.innerHTML=state.players.map((p,i)=>`
+    <div class="player-chip">${AVATAR_EMOJIS[i%6]} ${p} <span class="rm" onclick="removePlayer(${i})">✕</span></div>`).join('');
+}
+function addPlayer(){
+  const inp=document.getElementById('player-input');
+  const name=inp.value.trim();
+  if(!name)return;
+  if(state.players.length>=8){showToast('Max. 8 Spieler','var(--red)');return;}
+  state.players.push(name);inp.value='';renderPlayers();
+}
+function removePlayer(i){state.players.splice(i,1);renderPlayers();}
+document.getElementById('player-input').addEventListener('keydown',e=>{if(e.key==='Enter')addPlayer();});
+
+// ============================================================
+// GAME START
+// ============================================================
+function startGame(){
+  const err=document.getElementById('start-err');
+  if(state.players.length<1){err.textContent='Mind. 1 Spieler!';return;}
+  err.textContent='';
+  const start=state.selectedGame==='501'?501:state.selectedGame==='301'?301:0;
+  state.currentPlayerIdx=0;
+  state.currentThrows=[];state.history=[];state.mult=1;state.undo=[];state.winner=null;
+  state.halfitRound=0;
+  state.scores={};state.legs={};state.wins={};
+  state.cricketMarks={};state.atcTargets={};state.killerLives={};state.halfit={};
+  state.stats={};
+  state.players.forEach(p=>{
+    state.scores[p]=start;state.legs[p]=0;state.wins[p]=0;
+    state.cricketMarks[p]={};CRICKET_NUMS.forEach(n=>state.cricketMarks[p][n]=0);
+    state.atcTargets[p]=1;state.killerLives[p]=3;state.halfit[p]=0;
+    state.stats[p]={totalDarts:0,totalScore:0,rounds:0};
+  });
+  document.getElementById('tab-game').style.display='';
+  document.getElementById('numpad-section').style.opacity='';
+  document.getElementById('numpad-section').style.pointerEvents='';
+  showTab('game');
+  renderGame();
+}
+
+// ============================================================
+// GAME RENDER
+// ============================================================
+function renderGame(){
+  document.getElementById('g-mode-badge').textContent=GAMES.find(g=>g.id===state.selectedGame)?.name||state.selectedGame;
+  document.getElementById('g-turn-name').textContent=state.players[state.currentPlayerIdx]||'–';
+  if(state.winner){
+    document.getElementById('winner-area').innerHTML=`
+      <div class="winner-banner">
+        <div class="winner-crown">🏆</div>
+        <div class="winner-title">${state.winner} gewinnt!</div>
+        <div class="winner-sub">Herzlichen Glückwunsch!</div>
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;">
+          <button class="btn btn-secondary btn-sm" onclick="endGame()">Neues Spiel</button>
+          <button class="btn btn-secondary btn-sm" onclick="saveCurrentGame()">💾 Speichern</button>
+        </div>
+      </div>`;
+    document.getElementById('numpad-section').style.opacity='0.4';
+    document.getElementById('numpad-section').style.pointerEvents='none';
+  } else {
+    document.getElementById('winner-area').innerHTML='';
+  }
+  renderScoreboard();
+  renderNumpad();
+  renderHistory();
+}
+function getAvg(p){
+  const s=state.stats[p];
+  if(!s||s.rounds===0)return '–';
+  return (s.totalScore/s.rounds).toFixed(1);
+}
+function renderScoreboard(){
+  const gm=state.selectedGame;
+  let h='<div class="sb-grid">';
+  state.players.forEach((p,i)=>{
+    const isActive=i===state.currentPlayerIdx;
+    const isWinner=state.winner===p;
+    const score=state.scores[p];
+    let scoreClass='';
+    if((gm==='501'||gm==='301')&&score<=50)scoreClass='low';
+    if((gm==='501'||gm==='301')&&score<=10)scoreClass='hot';
+    let dispScore=gm==='cricket'?(state.scores[p]||0)
+      :gm==='atc'?((state.atcTargets[p]>20?'✓':state.atcTargets[p]+'/20'))
+      :gm==='killer'?''
+      :gm==='halfit'?state.halfit[p]
+      :score;
+    let subHtml='';
+    if(gm==='cricket'||gm==='tactics'){
+      subHtml='<div class="cricket-marks">';
+      CRICKET_NUMS.forEach(n=>{
+        const m=state.cricketMarks[p][n]||0;
+        const cls=m>=3?'closed':m>0?'open':'';
+        const disp=m===0?n:m===1?'/':m===2?'X':'⊗';
+        subHtml+=`<div class="cm ${cls}">${disp}</div>`;
+      });
+      subHtml+='</div>';
+    } else if(gm==='atc'){
+      const tgt=state.atcTargets[p];
+      subHtml='<div class="atc-nums">';
+      [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,'B'].forEach((n,ni)=>{
+        const done=tgt>ni+1||(tgt>20);
+        const cur=tgt===ni+1&&tgt<=20;
+        const isBull=n==='B';
+        const curBull=isBull&&tgt>20;
+        subHtml+=`<div class="atc-n ${done||curBull?'done':cur?'current':''}">${n}</div>`;
+      });
+      subHtml+='</div>';
+    } else if(gm==='killer'){
+      let lives='';
+      for(let l=0;l<3;l++)lives+=l<state.killerLives[p]?'❤️':'🖤';
+      subHtml=`<div style="font-size:13px;">${lives}</div>`;
+    } else if(gm==='halfit'){
+      const rnd=HALFIT_ROUNDS[Math.min(state.halfitRound,HALFIT_ROUNDS.length-1)];
+      subHtml=`<div style="font-size:10px;color:var(--muted)">Runde ${state.halfitRound+1}: Ziel ${rnd}</div>`;
+    }
+    const avg=getAvg(p);
+    h+=`<div class="player-row${isActive?' active':''}${isWinner?' winner':''}">
+      <div class="p-avatar" style="background:${AVATAR_BGS[i%6]}">${p[0].toUpperCase()}</div>
+      <div class="p-info">
+        <div class="p-name">${AVATAR_EMOJIS[i%6]} ${p}</div>
+        <div class="p-avg">Ø ${avg} · Darts: ${state.stats[p]?.totalDarts||0}</div>
+        ${subHtml?`<div class="p-sub">${subHtml}</div>`:''}
+      </div>
+      <div class="p-score ${scoreClass}">${gm==='killer'?lives:dispScore}</div>
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('scoreboard').innerHTML=h;
+}
+function renderNumpad(){
+  const np=document.getElementById('numpad');np.innerHTML='';
+  const gm=state.selectedGame;
+  if(gm==='cricket'||gm==='tactics'){
+    CRICKET_NUMS.forEach(n=>{
+      const b=mkBtn(n===''?'Miss':n,'np-btn'+(n==='B'?' bull':''));
+      b.onclick=()=>enterCricket(n);np.appendChild(b);
+    });
+    const miss=mkBtn('Miss','np-btn miss');miss.onclick=()=>enterCricket(null);np.appendChild(miss);
+    document.getElementById('mult-row').style.display='';
+  } else if(gm==='atc'){
+    const p=state.players[state.currentPlayerIdx];
+    const tgt=state.atcTargets[p]||1;
+    for(let n=1;n<=20;n++){
+      const b=mkBtn(n,'np-btn'+(n<tgt?' done':n===tgt?' tgt':''));
+      b.onclick=()=>enterATC(n);np.appendChild(b);
+    }
+    const bull=mkBtn('Bull','np-btn bull');bull.onclick=()=>enterATC('B');np.appendChild(bull);
+    const miss=mkBtn('Miss','np-btn miss');miss.onclick=()=>enterATC(null);np.appendChild(miss);
+    document.getElementById('mult-row').style.display='none';
+  } else {
+    for(let n=1;n<=20;n++){const b=mkBtn(n,'np-btn');b.onclick=()=>enterScore(n);np.appendChild(b);}
+    const bull=mkBtn('Bull','np-btn bull');bull.onclick=()=>enterBull();np.appendChild(bull);
+    const miss=mkBtn('Miss','np-btn miss');miss.onclick=()=>enterScore(0);np.appendChild(miss);
+    document.getElementById('mult-row').style.display='';
+  }
+}
+function mkBtn(txt,cls){const b=document.createElement('div');b.className=cls;b.textContent=txt;return b;}
+function setMult(m){
+  state.mult=m;
+  document.querySelectorAll('.mult-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.mult-btn[data-m="${m}"]`).classList.add('active');
+}
+
+// ============================================================
+// THROW LOGIC
+// ============================================================
+function enterScore(base){
+  if(state.currentThrows.length>=3||state.winner)return;
+  const val=base===0?0:base*state.mult;
+  const label=base===0?'Miss':state.mult>1?(state.mult===2?'D':'T')+base:''+base;
+  if(state.mult===2&&base>0)triggerVoice('double');
+  if(state.mult===3&&base>0)triggerVoice('triple');
+  state.currentThrows.push({base,mult:state.mult,val,label});
+  setMult(1);updateThrowDisplay();
+  if(state.currentThrows.length>=3)checkAutoVoice();
+}
+function enterBull(){
+  if(state.currentThrows.length>=3||state.winner)return;
+  const val=state.mult>=2?50:25;
+  const label=state.mult>=2?'D-Bull':'Bull';
+  triggerVoice('bull');
+  state.currentThrows.push({base:25,mult:state.mult,val,label,isBull:true});
+  setMult(1);updateThrowDisplay();
+}
+function checkAutoVoice(){
+  const total=state.currentThrows.reduce((a,t)=>a+t.val,0);
+  if(total===180){showToast('180!!! 🏹','var(--gold)');triggerVoice('180');}
+  else if(total===171){triggerVoice('171');}
+  else if(total>=100){triggerVoice('100plus');}
+}
+function updateThrowDisplay(){
+  let total=0;
+  ['t1','t2','t3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(state.currentThrows[i]){el.textContent=state.currentThrows[i].label;total+=state.currentThrows[i].val;}
+    else el.textContent='–';
+  });
+  document.getElementById('t-tot').textContent=total;
+}
+function clearThrow(){state.currentThrows=[];setMult(1);updateThrowDisplay();}
+
+function commitThrow(){
+  if(state.winner)return;
+  const p=state.players[state.currentPlayerIdx];
+  const total=state.currentThrows.reduce((a,t)=>a+t.val,0);
+  const darts=state.currentThrows.length||3;
+  const gm=state.selectedGame;
+  state.undo.push(JSON.stringify({state:JSON.parse(JSON.stringify(state))}));
+  if(state.undo.length>20)state.undo.shift();
+  if(!state.stats[p])state.stats[p]={totalDarts:0,totalScore:0,rounds:0};
+  state.stats[p].totalDarts+=darts;
+  state.stats[p].rounds+=1;
+  if(gm==='501'||gm==='301'){
+    let newScore=state.scores[p]-total;
+    const lastThrow=state.currentThrows[state.currentThrows.length-1];
+    const isDoubleFinish=lastThrow&&lastThrow.mult===2;
+    const isMasterFinish=lastThrow&&lastThrow.mult>=2;
+    let bust=false;
+    if(newScore<0)bust=true;
+    else if(newScore===1)bust=true;
+    else if(newScore===0&&state.gameOptions.endOn==='double'&&!isDoubleFinish)bust=true;
+    else if(newScore===0&&state.gameOptions.endOn==='master'&&!isMasterFinish)bust=true;
+    if(bust){
+      state.stats[p].rounds=Math.max(0,state.stats[p].rounds-1);
+      state.stats[p].totalDarts=Math.max(0,state.stats[p].totalDarts-darts);
+      showToast('BUST!','var(--red)');triggerVoice('bust');
+      addHistory(p,'BUST',0);
+    } else if(newScore===0){
+      state.scores[p]=0;state.winner=p;
+      state.stats[p].totalScore+=total;
+      triggerVoice('winner');showToast('🏆 '+p+' gewinnt!','var(--gold)');
+      addHistory(p,'FINISH 🏆',total);
+    } else {
+      state.scores[p]=newScore;
+      state.stats[p].totalScore+=total;
+      if(newScore<=170&&checkoutPossible(newScore)){triggerVoice('checkout');showToast('Checkout: '+newScore+'!',null);}
+      addHistory(p,total,total);
+      nextPlayer();
+    }
+  } else if(gm==='halfit'){
+    const rnd=HALFIT_ROUNDS[state.halfitRound];
+    let hit=state.currentThrows.some(t=>
+      (rnd==='B'&&(t.base===25||t.val===50))||(rnd==='DB'&&t.val===50)||(rnd==='3B'&&t.mult===3)||(t.base===rnd));
+    if(hit){state.halfit[p]=(state.halfit[p]||0)+total;state.stats[p].totalScore+=total;}
+    else{state.halfit[p]=Math.floor((state.halfit[p]||0)/2);}
+    addHistory(p,hit?'+'+total:'Halbiert!',total);
+    if(state.currentPlayerIdx===state.players.length-1)state.halfitRound++;
+    if(state.halfitRound>=HALFIT_ROUNDS.length){
+      const winner=state.players.reduce((a,b)=>state.halfit[a]>=state.halfit[b]?a:b);
+      state.winner=winner;triggerVoice('winner');
+    } else nextPlayer();
+  } else {
+    state.stats[p].totalScore+=total;
+    addHistory(p,total,total);nextPlayer();
+  }
+  state.currentThrows=[];setMult(1);updateThrowDisplay();renderGame();
+}
+
+function enterCricket(num){
+  if(state.currentThrows.length>=3||state.winner)return;
+  const label=num===null?'Miss':(state.mult>1?(state.mult===2?'D':'T'):'')+num;
+  if(state.mult===2&&num)triggerVoice('double');
+  if(state.mult===3&&num)triggerVoice('triple');
+  state.currentThrows.push({base:num,mult:state.mult,val:num,label});
+  setMult(1);updateThrowDisplay();
+  if(state.currentThrows.length>=3){
+    const p=state.players[state.currentPlayerIdx];
+    state.undo.push(JSON.stringify({state:JSON.parse(JSON.stringify(state))}));
+    if(!state.stats[p])state.stats[p]={totalDarts:0,totalScore:0,rounds:0};
+    state.stats[p].totalDarts+=3;state.stats[p].rounds+=1;
+    let pts=0;
+    state.currentThrows.forEach(t=>{
+      if(!t.base)return;
+      const cur=state.cricketMarks[p][t.base]||0;
+      const add=t.mult||1;
+      state.cricketMarks[p][t.base]=Math.min(cur+add,3);
+      if(cur+add>3){const extra=cur+add-3;pts+=t.base*extra;}
+    });
+    state.scores[p]=(state.scores[p]||0)+pts;
+    state.stats[p].totalScore+=pts;
+    const allClosed=CRICKET_NUMS.every(n=>state.cricketMarks[p][n]>=3);
+    if(allClosed){state.winner=p;triggerVoice('winner');showToast('🏆 '+p+'!','var(--gold)');}
+    else nextPlayer();
+    state.currentThrows=[];setMult(1);updateThrowDisplay();renderGame();
+  }
+}
+
+// ATC fixed logic
+function enterATC(num){
+  if(state.winner)return;
+  const p=state.players[state.currentPlayerIdx];
+  const tgt=state.atcTargets[p]||1;
+  state.undo.push(JSON.stringify({state:JSON.parse(JSON.stringify(state))}));
+  state.currentThrows.push({base:num,mult:1,val:num,label:''+num});
+  updateThrowDisplay();
+  if(num===tgt||(tgt>20&&num==='B')){
+    state.atcTargets[p]=tgt+1;
+    showToast('Treffer! → '+(state.atcTargets[p]>20?'Bull!':state.atcTargets[p]),null);
+    if(state.atcTargets[p]>21){state.winner=p;triggerVoice('winner');}
+  }
+  if(state.currentThrows.length>=3){
+    if(!state.stats[p])state.stats[p]={totalDarts:0,totalScore:0,rounds:0};
+    state.stats[p].totalDarts+=3;state.stats[p].rounds+=1;
+    addHistory(p,state.currentThrows.map(t=>t.label).join(' '),0);
+    nextPlayer();state.currentThrows=[];setMult(1);updateThrowDisplay();renderGame();
+  }
+}
+
+function addHistory(player,label,pts){
+  state.history.unshift({player,label,pts});
+  if(state.history.length>40)state.history.pop();
+}
+function renderHistory(){
+  const hl=document.getElementById('history-list');
+  if(!state.history.length){hl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0;">Noch keine Würfe</div>';return;}
+  hl.innerHTML=state.history.slice(0,12).map(h=>`
+    <div class="hi-item"><span class="hi-name">${h.player}</span><span class="hi-score">${h.label}</span></div>`).join('');
+}
+function nextPlayer(){
+  if(!state.winner){
+    state.currentPlayerIdx=(state.currentPlayerIdx+1)%state.players.length;
+    triggerVoice('nextPlayer');
+  }
+}
+function undoThrow(){
+  if(!state.undo.length){showToast('Nichts rückgängig','var(--muted)');return;}
+  const prev=JSON.parse(state.undo.pop());
+  Object.assign(state,prev.state);
+  state.undo=prev.state.undo||[];
+  state.currentThrows=[];setMult(1);updateThrowDisplay();
+  document.getElementById('numpad-section').style.opacity='';
+  document.getElementById('numpad-section').style.pointerEvents='';
+  renderGame();showToast('Rückgängig ✓',null);
+}
+function endGame(){
+  state.winner=null;
+  document.getElementById('tab-game').style.display='none';
+  document.getElementById('numpad-section').style.opacity='';
+  document.getElementById('numpad-section').style.pointerEvents='';
+  showTab('setup');
+}
+function checkoutPossible(s){
+  const co=[170,167,164,161,160,158,157,156,155,154,153,152,151,150,149,148,147,146,145,144,143,142,141,140,139,138,137,136,135,134,133,132,131,130,129,128,127,126,125,124,123,122,121,120,119,118,117,116,115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100,99,98,97,96,95,94,93,92,91,90,89,88,87,86,85,84,83,82,81,80,79,78,77,76,75,74,73,72,71,70,69,68,67,66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,2];
+  return co.includes(s);
+}
+
+// ============================================================
+// DESIGN
+// ============================================================
+function renderThemeGrid(){
+  const tg=document.getElementById('theme-grid');
+  tg.innerHTML=THEMES.map(t=>`
+    <div class="theme-card${state.theme===t.id?' active':''}" onclick="applyTheme('${t.id}')">
+      <div class="theme-preview" style="background:${t.bg};border:2px solid ${t.accent};">🎯</div>
+      <div class="theme-name">${t.name}</div>
+    </div>`).join('');
+  initLayoutDrag();
+}
+function applyTheme(id){
+  state.theme=id;
+  const t=THEMES.find(x=>x.id===id);
+  if(!t)return;
+  const r=document.documentElement;
+  r.style.setProperty('--bg',t.bg);r.style.setProperty('--card',t.card);
+  r.style.setProperty('--accent',t.accent);r.style.setProperty('--gold',t.gold);
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',t.bg);
+  showToast('Thema: '+t.name,null);renderThemeGrid();
+}
+function applyColor(){
+  const col=document.getElementById('color-picker').value;
+  document.documentElement.style.setProperty('--accent',col);showToast('Farbe gesetzt!',null);
+}
+function resetColors(){applyTheme('default');document.getElementById('color-picker').value='#00E676';}
+
+let dragSrc=null;
+function initLayoutDrag(){
+  const lb=document.getElementById('layout-blocks');
+  lb.innerHTML='';
+  const names={'scoreboard':'📊 Scoreboard','numpad-wrap':'🎯 Numpad / Eingabe','history-section':'📋 Verlauf'};
+  state.layoutOrder.forEach(id=>{
+    const div=document.createElement('div');
+    div.className='layout-block';div.draggable=true;div.dataset.id=id;
+    div.innerHTML=`<span class="drag-handle">☰</span><span style="font-size:13px;">${names[id]||id}</span>`;
+    div.addEventListener('dragstart',e=>{dragSrc=id;div.classList.add('dragging');});
+    div.addEventListener('dragend',()=>div.classList.remove('dragging'));
+    div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',e=>{
+      e.preventDefault();div.classList.remove('drag-over');
+      if(dragSrc===id)return;
+      const arr=state.layoutOrder;
+      const fi=arr.indexOf(dragSrc),ti=arr.indexOf(id);
+      arr.splice(fi,1);arr.splice(ti,0,dragSrc);
+      applyLayoutOrder();initLayoutDrag();
+    });
+  });
+}
+function applyLayoutOrder(){
+  const gs=document.getElementById('screen-game');
+  state.layoutOrder.forEach(id=>{
+    const el=document.getElementById(id);if(el)gs.appendChild(el);
+  });
+}
+
+// ============================================================
+// TAB ROUTING
+// ============================================================
+function showTab(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const tabMap={'setup':0,'game':1,'saves':2,'design':3,'voice':4};
+  const tabs=document.querySelectorAll('.nav-tab');
+  const idx=tabMap[name];
+  if(idx!==undefined&&tabs[idx])tabs[idx].classList.add('active');
+  if(name==='design')renderThemeGrid();
+  if(name==='voice')renderVoiceTab();
+  if(name==='saves')renderSaves();
+}
+function showToast(msg,color){
+  const t=document.getElementById('toast');
+  t.style.color=color||'var(--accent)';t.textContent=msg;t.classList.add('show');
+  clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ============================================================
+// PWA INSTALL
+// ============================================================
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  const bar=document.createElement('div');
+  bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#1A2332;border-top:1px solid #2A3A55;padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:100;font-size:13px;';
+  bar.innerHTML='<span style="flex:1">📲 DartCount als App installieren</span><button onclick="installPWA()" style="background:#00E676;color:#000;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">Installieren</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#6B7A99;font-size:16px;cursor:pointer;">✕</button>';
+  document.body.appendChild(bar);
+  window._installBar=bar;
+});
+function installPWA(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;if(window._installBar)window._installBar.remove();});
+}
+
+// Registrierung des Service Workers für den Offline-Betrieb
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registriert!', reg))
+      .catch(err => console.error('Service Worker Fehler:', err));
+  });
+}
+
+initSetup();
+</script>
+</body>
+</html>
