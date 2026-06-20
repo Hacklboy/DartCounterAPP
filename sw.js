@@ -1,6 +1,6 @@
 const CACHE_NAME = 'dartcount-v1';
 const ASSETS = [
-  './dartcount.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
